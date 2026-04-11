@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Dashboard - KKA Blitar</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    body { background: #0f172a; }
+    .sidebar { background: #1e293b; }
+    .card { background: #1e293b; border: 1px solid #334155; }
+    .input-field { background: #0f172a; border: 1px solid #334155; color: white; transition: all 0.3s; }
+    .input-field:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.2); }
+    .input-field::placeholder { color: #64748b; }
+    .input-field option { background: #1e293b; }
+    .table-row:hover { background: rgba(59,130,246,0.05); }
+    .badge { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 9999px; font-size: 12px; font-weight: 500; }
+    .toast { position: fixed; top: 20px; right: 20px; z-index: 9999; animation: slideIn 0.3s ease; }
+    @keyframes slideIn { from { transform: translateX(100%); opacity:0; } to { transform: translateX(0); opacity:1; } }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 50; }
+    .loading-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9998; display: flex; align-items: center; justify-content: center; }
+    .spinner { border: 4px solid rgba(255,255,255,0.2); border-top-color: #60a5fa; border-radius: 50%; width: 40px; height: 40px; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #0f172a; } ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+  </style>
+</head>
+<body class="text-white min-h-screen">
+
+  <!-- Login Page -->
+  <div id="loginPage" class="min-h-screen flex items-center justify-center p-4" style="background: linear-gradient(135deg, #0f172a, #1e3a5f);">
+    <div class="w-full max-w-md">
+      <div class="text-center mb-8">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-500/20 border-2 border-blue-400/40 mb-4">
+          <i class="fas fa-shield-alt text-2xl text-blue-400"></i>
+        </div>
+        <h1 class="text-2xl font-bold text-white">Admin Dashboard</h1>
+        <p class="text-white/50 text-sm mt-1">KKA Blitar - Lomba SMP</p>
+      </div>
+      <div class="card rounded-2xl p-8">
+        <div class="mb-5">
+          <label class="block text-slate-400 text-sm mb-2">Email</label>
+          <input type="email" id="loginEmail" placeholder="admin@email.com"
+            class="input-field w-full rounded-xl px-4 py-3 text-sm"/>
+        </div>
+        <div class="mb-6">
+          <label class="block text-slate-400 text-sm mb-2">Password</label>
+          <div class="relative">
+            <input type="password" id="loginPassword" placeholder="••••••••"
+              class="input-field w-full rounded-xl px-4 py-3 text-sm pr-12"/>
+            <button type="button" onclick="togglePassword()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white">
+              <i class="fas fa-eye" id="eyeIcon"></i>
+            </button>
+          </div>
+        </div>
+        <p class="text-red-400 text-sm mb-4 hidden" id="loginError">Email atau password salah.</p>
+        <button onclick="doLogin()"
+          class="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-colors">
+          <i class="fas fa-sign-in-alt mr-2"></i>Masuk
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dashboard -->
+  <div id="dashboardPage" class="hidden min-h-screen flex">
+
+    <!-- Sidebar -->
+    <aside class="sidebar w-64 min-h-screen flex flex-col fixed left-0 top-0 z-40">
+      <div class="p-6 border-b border-slate-700">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-blue-500/20 border border-blue-400/40 flex items-center justify-center">
+            <i class="fas fa-trophy text-yellow-400"></i>
+          </div>
+          <div>
+            <p class="font-bold text-white text-sm">KKA Blitar</p>
+            <p class="text-slate-400 text-xs">Admin Panel</p>
+          </div>
+        </div>
+      </div>
+      <nav class="flex-1 p-4 space-y-1">
+        <button onclick="showTab('dashboard')" id="tab-dashboard"
+          class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all bg-blue-600 text-white">
+          <i class="fas fa-chart-bar w-4"></i> Dashboard
+        </button>
+        <button onclick="showTab('peserta')" id="tab-peserta"
+          class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-slate-400 hover:bg-slate-700 hover:text-white">
+          <i class="fas fa-users w-4"></i> Data Peserta
+        </button>
+        <button onclick="showTab('sekolah')" id="tab-sekolah"
+          class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-slate-400 hover:bg-slate-700 hover:text-white">
+          <i class="fas fa-school w-4"></i> Data Sekolah
+        </button>
+        <button onclick="showTab('tambah')" id="tab-tambah"
+          class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-slate-400 hover:bg-slate-700 hover:text-white">
+          <i class="fas fa-plus-circle w-4"></i> Tambah Sekolah
+        </button>
+      </nav>
+      <div class="p-4 border-t border-slate-700">
+        <button onclick="doLogout()" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-red-400 hover:bg-red-500/10 transition-all">
+          <i class="fas fa-sign-out-alt w-4"></i> Logout
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="ml-64 flex-1 p-8">
+
+      <!-- Top Bar -->
+      <div class="flex items-center justify-between mb-8">
+        <div>
+          <h1 class="text-2xl font-bold text-white" id="pageTitle">Dashboard</h1>
+          <p class="text-slate-400 text-sm" id="pageSubtitle">Selamat datang di panel admin KKA Blitar</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <button onclick="refreshData()" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-sm transition-colors">
+            <i class="fas fa-sync-alt" id="refreshIcon"></i> Refresh
+          </button>
+          <div class="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-700 text-sm">
+            <i class="fas fa-user-circle text-blue-400"></i>
+            <span class="text-slate-300">kka-blitar@gmail.com</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- DASHBOARD TAB -->
+      <div id="content-dashboard">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div class="card rounded-2xl p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div class="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                <i class="fas fa-users text-blue-400 text-xl"></i>
+              </div>
+              <span class="text-slate-500 text-xs">Total</span>
+            </div>
+            <p class="text-3xl font-bold text-white" id="statTotal">-</p>
+            <p class="text-slate-400 text-sm mt-1">Total Pendaftar</p>
+          </div>
+          <div class="card rounded-2xl p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div class="w-12 h-12 rounded-xl bg-green-500/20 flex items-center justify-center">
+                <i class="fas fa-school text-green-400 text-xl"></i>
+              </div>
+              <span class="text-slate-500 text-xs">Sekolah</span>
+            </div>
+            <p class="text-3xl font-bold text-white" id="statSekolah">-</p>
+            <p class="text-slate-400 text-sm mt-1">Sekolah Terdaftar</p>
+          </div>
+          <div class="card rounded-2xl p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div class="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center">
+                <i class="fas fa-calendar-check text-purple-400 text-xl"></i>
+              </div>
+              <span class="text-slate-500 text-xs">Hari ini</span>
+            </div>
+            <p class="text-3xl font-bold text-white" id="statHariIni">-</p>
+            <p class="text-slate-400 text-sm mt-1">Daftar Hari Ini</p>
+          </div>
+        </div>
+
+        <!-- Recent Registrations -->
+        <div class="card rounded-2xl p-6">
+          <h3 class="font-semibold text-white mb-4 flex items-center gap-2">
+            <i class="fas fa-clock text-blue-400"></i> Pendaftaran Terbaru
+          </h3>
+          <div id="recentTable" class="overflow-x-auto">
+            <div class="text-center py-8 text-slate-500">
+              <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+              <p>Memuat data...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PESERTA TAB -->
+      <div id="content-peserta" class="hidden">
+        <div class="card rounded-2xl p-6">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="font-semibold text-white flex items-center gap-2">
+              <i class="fas fa-list text-blue-400"></i> Semua Data Peserta
+            </h3>
+            <div class="flex gap-3">
+              <input type="text" id="searchPeserta" placeholder="Cari nama/sekolah..."
+                class="input-field rounded-xl px-4 py-2 text-sm w-56" oninput="filterPeserta()"/>
+              <select id="filterKategori" class="input-field rounded-xl px-4 py-2 text-sm" onchange="filterPeserta()">
+                <option value="">Semua Kategori</option>
+                <option value="Scratch">Scratch</option>
+                <option value="Web">Web</option>
+                <option value="Mobile">Mobile</option>
+                <option value="Game">Game</option>
+              </select>
+              <button onclick="exportCSV()" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-sm transition-colors">
+                <i class="fas fa-download"></i> Export CSV
+              </button>
+            </div>
+          </div>
+          <div id="pesertaTable" class="overflow-x-auto">
+            <div class="text-center py-8 text-slate-500">
+              <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+              <p>Memuat data...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SEKOLAH TAB -->
+      <div id="content-sekolah" class="hidden">
+        <div class="card rounded-2xl p-6">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="font-semibold text-white flex items-center gap-2">
+              <i class="fas fa-school text-green-400"></i> Daftar Sekolah
+            </h3>
+            <input type="text" id="searchSekolah" placeholder="Cari sekolah..."
+              class="input-field rounded-xl px-4 py-2 text-sm w-56" oninput="filterSekolah()"/>
+          </div>
+          <div id="sekolahTable" class="overflow-x-auto">
+            <div class="text-center py-8 text-slate-500">
+              <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+              <p>Memuat data...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAMBAH SEKOLAH TAB -->
+      <div id="content-tambah" class="hidden">
+        <div class="card rounded-2xl p-8 max-w-2xl">
+          <h3 class="font-semibold text-white mb-6 flex items-center gap-2">
+            <i class="fas fa-plus-circle text-blue-400"></i> Tambah Data Sekolah
+          </h3>
+          <form id="addSekolahForm" novalidate>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label class="block text-slate-400 text-sm mb-2">Nama Sekolah <span class="text-red-400">*</span></label>
+                <input type="text" id="addNamaSekolah" placeholder="SMP Negeri 1 Blitar"
+                  class="input-field w-full rounded-xl px-4 py-3 text-sm" required/>
+              </div>
+              <div>
+                <label class="block text-slate-400 text-sm mb-2">NPSN</label>
+                <input type="text" id="addNpsn" placeholder="12345678"
+                  class="input-field w-full rounded-xl px-4 py-3 text-sm"/>
+              </div>
+              <div>
+                <label class="block text-slate-400 text-sm mb-2">Alamat</label>
+                <input type="text" id="addAlamat" placeholder="Jl. Merdeka No. 1"
+                  class="input-field w-full rounded-xl px-4 py-3 text-sm"/>
+              </div>
+              <div>
+                <label class="block text-slate-400 text-sm mb-2">Kecamatan</label>
+                <input type="text" id="addKecamatan" placeholder="Kepanjen Kidul"
+                  class="input-field w-full rounded-xl px-4 py-3 text-sm"/>
+              </div>
+              <div>
+                <label class="block text-slate-400 text-sm mb-2">Kepala Sekolah</label>
+                <input type="text" id="addKepsek" placeholder="Nama kepala sekolah"
+                  class="input-field w-full rounded-xl px-4 py-3 text-sm"/>
+              </div>
+              <div>
+                <label class="block text-slate-400 text-sm mb-2">No. Telepon</label>
+                <input type="tel" id="addTelp" placeholder="0342-123456"
+                  class="input-field w-full rounded-xl px-4 py-3 text-sm"/>
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-slate-400 text-sm mb-2">Email Sekolah</label>
+                <input type="email" id="addEmail" placeholder="sekolah@email.com"
+                  class="input-field w-full rounded-xl px-4 py-3 text-sm"/>
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-slate-400 text-sm mb-2">Catatan</label>
+                <textarea id="addCatatan" placeholder="Catatan tambahan..."
+                  class="input-field w-full rounded-xl px-4 py-3 text-sm h-24 resize-none"></textarea>
+              </div>
+            </div>
+            <p class="text-red-400 text-sm mt-3 hidden" id="addSekolahError"></p>
+            <div class="flex gap-3 mt-6">
+              <button type="submit"
+                class="flex items-center gap-2 px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-colors">
+                <i class="fas fa-save"></i> Simpan Sekolah
+              </button>
+              <button type="button" onclick="resetAddForm()"
+                class="px-6 py-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-white transition-colors">
+                Reset
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="loading-overlay hidden">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- Detail Modal -->
+  <div id="detailModal" class="modal-overlay hidden flex items-center justify-center p-4">
+    <div class="card rounded-2xl p-8 max-w-lg w-full max-h-[80vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="font-bold text-white text-lg">Detail Peserta</h3>
+        <button onclick="closeDetailModal()" class="text-slate-400 hover:text-white">
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+      <div id="detailContent"></div>
+    </div>
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+</html>
