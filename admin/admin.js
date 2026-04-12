@@ -13,13 +13,17 @@ function doLogin() {
   const pass = document.getElementById('loginPassword').value;
   const errEl = document.getElementById('loginError');
 
-  if (email === ADMIN_EMAIL && pass === ADMIN_PASSWORD) {
+  // Trim password juga untuk handle autofill
+  const passTrimmed = pass.trim();
+
+  if (email === ADMIN_EMAIL && (pass === ADMIN_PASSWORD || passTrimmed === ADMIN_PASSWORD)) {
     sessionStorage.setItem('adminLoggedIn', '1');
     localStorage.setItem('adminLoggedIn', '1');
     document.getElementById('loginPage').classList.add('hidden');
     document.getElementById('dashboardPage').classList.remove('hidden');
     loadAllData();
   } else {
+    errEl.textContent = 'Email atau password salah.';
     errEl.classList.remove('hidden');
     setTimeout(() => errEl.classList.add('hidden'), 3000);
   }
