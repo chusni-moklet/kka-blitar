@@ -6,7 +6,6 @@
   <title>Admin Dashboard - KKA Blitar</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
-  <style>
     body { background: #0f172a; }
     .sidebar { background: #1e293b; }
     .card { background: #1e293b; border: 1px solid #334155; }
@@ -231,9 +230,42 @@
 
       <!-- TAMBAH SEKOLAH TAB -->
       <div id="content-tambah" class="hidden">
+        <!-- Import CSV -->
+        <div class="card rounded-2xl p-6 max-w-2xl mb-6">
+          <h3 class="font-semibold text-white mb-1 flex items-center gap-2">
+            <i class="fas fa-file-csv text-green-400"></i> Import Banyak Sekolah (CSV)
+          </h3>
+          <p class="text-slate-400 text-xs mb-4">Upload file CSV dengan kolom: <span class="text-slate-300 font-mono">Nama Sekolah, NPSN, Alamat, Kecamatan, Kepala Sekolah, Telepon, Email, Catatan</span></p>
+          <div class="flex items-center gap-3">
+            <label class="flex items-center gap-2 px-4 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm cursor-pointer transition-colors">
+              <i class="fas fa-upload"></i> Pilih File CSV
+              <input type="file" id="csvFile" accept=".csv" class="hidden" onchange="previewCSV(this)"/>
+            </label>
+            <button onclick="downloadTemplateCSV()" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-sm transition-colors">
+              <i class="fas fa-download"></i> Download Template
+            </button>
+          </div>
+          <!-- Preview -->
+          <div id="csvPreview" class="hidden mt-4">
+            <div class="flex items-center justify-between mb-2">
+              <p class="text-slate-300 text-sm" id="csvInfo"></p>
+              <button onclick="importCSV()" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm transition-colors">
+                <i class="fas fa-save"></i> Import Semua
+              </button>
+            </div>
+            <div class="overflow-x-auto rounded-xl border border-slate-700">
+              <table class="w-full text-xs">
+                <thead><tr id="csvHeaderRow" class="bg-slate-700 text-slate-300"></tr></thead>
+                <tbody id="csvBodyRows" class="divide-y divide-slate-800"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Form Manual -->
         <div class="card rounded-2xl p-8 max-w-2xl">
           <h3 class="font-semibold text-white mb-6 flex items-center gap-2">
-            <i class="fas fa-plus-circle text-blue-400"></i> Tambah Data Sekolah
+            <i class="fas fa-plus-circle text-blue-400"></i> Tambah Satu Sekolah
           </h3>
           <form id="addSekolahForm" novalidate>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">

@@ -284,7 +284,103 @@ function filterSekolah() {
 }
 
 // =============================================
-// TAMBAH SEKOLAH
+// IMPORT CSV
+// =============================================
+let csvData = [];
+
+function previewCSV(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const text = e.target.result;
+    const lines = text.trim().split('\n').filter(l => l.trim());
+    if (lines.length < 2) { showToast('File CSV kosong atau tidak valid', 'error'); return; }
+
+    // Parse CSV (handle quoted commas)
+    const parseRow = row => {
+      const result = [];
+      let cur = '', inQ = false;
+      for (let c of row) {
+        if (c === '"') { inQ = !inQ; }
+        else if (c === ',' && !inQ) { result.push(cur.trim()); cur = ''; }
+        else cur += c;
+      }
+      result.push(cur.trim());
+      return result;
+    };
+
+    const headers = parseRow(lines[0]);
+    csvData = lines.slice(1).map(l => {
+      const vals = parseRow(l);
+      const obj = {};
+      headers.forEach((h, i) => obj[h.trim()] = vals[i] || '');
+      return obj;
+    }).filter(r => Object.values(r).some(v => v));
+
+    // Render preview
+    const colMap = ['Nama Sekolah','NPSN','Alamat','Kecamatan','Kepala Sekolah','Telepon','Email','Catatan'];
+    document.getElementById('csvInfo').textContent = `${csvData.length} sekolah siap diimport`;
+    document.getElementById('csvHeaderRow').innerHTML = colMap.map(h => `<th class="px-3 py-2 text-left">${h}</th>`).join('');
+    document.getElementById('csvBodyRows').innerHTML = csvData.slice(0, 10).map(r => `
+      <tr class="table-row">
+        ${colMap.map(h => `<td class="px-3 py-2 text-slate-300 whitespace-nowrap">${r[h] || r[h.toLowerCase()] || '-'}</td>`).join('')}
+      </tr>`).join('') + (csvData.length > 10 ? `<tr><td colspan="8" class="px-3 py-2 text-slate-500 text-center">... dan ${csvData.length - 10} sekolah lainnya</td></tr>` : '');
+    document.getElementById('csvPreview').classList.remove('hidden');
+  };
+  reader.readAsText(file);
+}
+
+async function importCSV() {
+  if (!csvData.length) return;
+  document.getElementById('loadingOverlay').classList.remove('hidden');
+
+  const colMap = {
+    'Nama Sekolah': 'namaSekolah', 'NPSN': 'npsn', 'Alamat': 'alamat',
+    'Kecamatan': 'kecamatan', 'Kepala Sekolah': 'kepsek',
+    'Telepon': 'telp', 'Email': 'email', 'Catatan': 'catatan'
+  };
+
+  let sukses = 0, gagal = 0;
+  for (const row of csvData) {
+    const payload = { action: 'addSekolah' };
+    for (const [csvCol, key] of Object.entries(colMap)) {
+      payload[key] = row[csvCol] || row[csvCol.toLowerCase()] || '';
+    }
+    if (!payload.namaSekolah) { gagal++; continue; }
+    try {
+      await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        redirect: 'follow',
+        body: JSON.stringify(payload)
+      });
+      allSekolah.push({ id: Date.now() + sukses, ...payload });
+      sukses++;
+    } catch { gagal++; }
+  }
+
+  renderSekolahTable(allSekolah);
+  document.getElementById('loadingOverlay').classList.add('hidden');
+  document.getElementById('csvPreview').classList.add('hidden');
+  document.getElementById('csvFile').value = '';
+  csvData = [];
+  showToast(`Import selesai: ${sukses} berhasil${gagal ? ', ' + gagal + ' gagal' : ''}`, sukses > 0 ? 'success' : 'error');
+}
+
+function downloadTemplateCSV() {
+  const headers = 'Nama Sekolah,NPSN,Alamat,Kecamatan,Kepala Sekolah,Telepon,Email,Catatan';
+  const contoh = 'SMP Negeri 1 Blitar,20517001,Jl. Veteran No. 1,Kepanjen Kidul,Drs. Ahmad Fauzi,0342-801234,smpn1@gmail.com,';
+  const blob = new Blob([headers + '\n' + contoh], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'template-sekolah.csv';
+  a.click();
+}
+
+// =============================================
+// TAMBAH SEKOLAH (form manual)
 // =============================================
 document.getElementById('addSekolahForm')?.addEventListener('submit', async function(e) {
   e.preventDefault();
