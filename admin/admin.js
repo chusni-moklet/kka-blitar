@@ -268,7 +268,7 @@ function renderSekolahTable(data) {
             <td class="py-3 pr-3 text-slate-300">${s.kepsek || '-'}</td>
             <td class="py-3 pr-3 text-slate-400">${s.telp || '-'}</td>
             <td class="py-3">
-              <button onclick="deleteSekolah(${s.id})" class="text-red-400 hover:text-red-300 text-xs px-2 py-1 rounded bg-red-500/10 hover:bg-red-500/20 transition-colors">
+              <button onclick="deleteSekolah('${s.id}')" class="text-red-400 hover:text-red-300 text-xs px-2 py-1 rounded bg-red-500/10 hover:bg-red-500/20 transition-colors">
                 <i class="fas fa-trash"></i>
               </button>
             </td>
@@ -447,7 +447,7 @@ async function deletePeserta(id) {
 
 async function deleteSekolah(id) {
   if (!confirm('Hapus data sekolah ini?')) return;
-  allSekolah = allSekolah.filter(s => s.id !== id);
+  allSekolah = allSekolah.filter(s => String(s.id) !== String(id));
   renderSekolahTable(allSekolah);
   showToast('Sekolah dihapus', 'info');
   // Also call API
