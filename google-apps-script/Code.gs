@@ -78,10 +78,11 @@ function doPost(e) {
     const action = data.action;
 
     let result;
-    if (action === 'register')         result = registerPeserta(data);
-    else if (action === 'addSekolah')  result = addSekolah(data);
-    else if (action === 'deleteSekolah') result = deleteSekolah(data);
-    else if (action === 'deletePeserta') result = deletePeserta(data);
+    if (action === 'register')              result = registerPeserta(data);
+    else if (action === 'addSekolah')       result = addSekolah(data);
+    else if (action === 'addSekolahBatch')  result = addSekolahBatch(data);
+    else if (action === 'deleteSekolah')    result = deleteSekolah(data);
+    else if (action === 'deletePeserta')    result = deletePeserta(data);
     else result = { success: false, message: 'Action tidak dikenal: ' + action };
 
     return corsOutput(result);
@@ -160,6 +161,38 @@ function getPeserta() {
     return obj;
   });
   return { success: true, data: data };
+}
+
+// =============================================
+// ADD SEKOLAH BATCH (import CSV)
+// =============================================
+function addSekolahBatch(data) {
+  const ss = SpreadsheetApp.openById(getSpreadsheetId());
+  let sheet = ss.getSheetByName(SHEET_SEKOLAH);
+
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_SEKOLAH);
+    const headers = ['ID','Nama Sekolah','NPSN','Alamat','Kecamatan',
+                     'Kepala Sekolah','Telepon','Email','Catatan','Tanggal Ditambahkan'];
+    sheet.appendRow(headers);
+    sheet.getRange(1, 1, 1, headers.length)
+         .setFontWeight('bold').setBackground('#1e3a5f').setFontColor('white');
+  }
+
+  const tanggal = Utilities.formatDate(new Date(), 'Asia/Jakarta', 'yyyy-MM-dd HH:mm');
+  const rows = (data.data || []).map(function(s) {
+    return [
+      Utilities.getUuid(), s.namaSekolah, s.npsn || '', s.alamat || '',
+      s.kecamatan || '', s.kepsek || '', s.telp || '',
+      s.email || '', s.catatan || '', tanggal
+    ];
+  });
+
+  if (rows.length > 0) {
+    sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, 10).setValues(rows);
+  }
+
+  return { success: true, count: rows.length };
 }
 
 // =============================================

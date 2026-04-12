@@ -342,31 +342,38 @@ async function importCSV() {
     'Telepon': 'telp', 'Email': 'email', 'Catatan': 'catatan'
   };
 
-  let sukses = 0, gagal = 0;
-  for (const row of csvData) {
-    const payload = { action: 'addSekolah' };
-    for (const [csvCol, key] of Object.entries(colMap)) {
-      payload[key] = row[csvCol] || row[csvCol.toLowerCase()] || '';
-    }
-    if (!payload.namaSekolah) { gagal++; continue; }
-    try {
-      await fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        redirect: 'follow',
-        body: JSON.stringify(payload)
-      });
-      allSekolah.push({ id: Date.now() + sukses, ...payload });
-      sukses++;
-    } catch { gagal++; }
-  }
+  const sekolahList = csvData
+    .map(row => {
+      const obj = { action: 'addSekolah' };
+      for (const [csvCol, key] of Object.entries(colMap)) {
+        obj[key] = row[csvCol] || row[csvCol.toLowerCase()] || '';
+      }
+      return obj;
+    })
+    .filter(s => s.namaSekolah);
 
-  renderSekolahTable(allSekolah);
-  document.getElementById('loadingOverlay').classList.add('hidden');
-  document.getElementById('csvPreview').classList.add('hidden');
-  document.getElementById('csvFile').value = '';
-  csvData = [];
-  showToast(`Import selesai: ${sukses} berhasil${gagal ? ', ' + gagal + ' gagal' : ''}`, sukses > 0 ? 'success' : 'error');
+  try {
+    // Kirim semua sekaligus dalam satu request batch
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      redirect: 'follow',
+      body: JSON.stringify({ action: 'addSekolahBatch', data: sekolahList })
+    });
+    const result = await res.json();
+    const sukses = result.count || sekolahList.length;
+    sekolahList.forEach((s, i) => allSekolah.push({ id: Date.now() + i, ...s }));
+    renderSekolahTable(allSekolah);
+    showToast(`Import selesai: ${sukses} sekolah berhasil ditambahkan`, 'success');
+  } catch (err) {
+    console.error(err);
+    showToast('Gagal import: ' + err.message, 'error');
+  } finally {
+    document.getElementById('loadingOverlay').classList.add('hidden');
+    document.getElementById('csvPreview').classList.add('hidden');
+    document.getElementById('csvFile').value = '';
+    csvData = [];
+  }
 }
 
 function downloadTemplateCSV() {
