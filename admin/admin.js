@@ -15,6 +15,7 @@ function doLogin() {
 
   if (email === ADMIN_EMAIL && pass === ADMIN_PASSWORD) {
     sessionStorage.setItem('adminLoggedIn', '1');
+    localStorage.setItem('adminLoggedIn', '1');
     document.getElementById('loginPage').classList.add('hidden');
     document.getElementById('dashboardPage').classList.remove('hidden');
     loadAllData();
@@ -26,6 +27,7 @@ function doLogin() {
 
 function doLogout() {
   sessionStorage.removeItem('adminLoggedIn');
+  localStorage.removeItem('adminLoggedIn');
   document.getElementById('dashboardPage').classList.add('hidden');
   document.getElementById('loginPage').classList.remove('hidden');
   document.getElementById('loginEmail').value = '';
@@ -41,13 +43,17 @@ function togglePassword() {
 
 // Check session on load
 window.addEventListener('load', () => {
-  if (sessionStorage.getItem('adminLoggedIn')) {
+  const loggedIn = sessionStorage.getItem('adminLoggedIn') || localStorage.getItem('adminLoggedIn');
+  if (loggedIn) {
     document.getElementById('loginPage').classList.add('hidden');
     document.getElementById('dashboardPage').classList.remove('hidden');
     loadAllData();
   }
   // Enter key on login
   document.getElementById('loginPassword')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+  });
+  document.getElementById('loginEmail')?.addEventListener('keydown', e => {
     if (e.key === 'Enter') doLogin();
   });
 });
