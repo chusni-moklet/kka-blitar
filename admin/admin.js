@@ -342,6 +342,8 @@ async function importCSV() {
     'Telepon': 'telp', 'Email': 'email', 'Catatan': 'catatan'
   };
 
+  const existingNames = new Set(allSekolah.map(s => s.namaSekolah.toLowerCase().trim()));
+
   const sekolahList = csvData
     .map(row => {
       const obj = { action: 'addSekolah' };
@@ -350,7 +352,12 @@ async function importCSV() {
       }
       return obj;
     })
-    .filter(s => s.namaSekolah);
+    .filter(s => {
+      if (!s.namaSekolah) return false;
+      if (existingNames.has(s.namaSekolah.toLowerCase().trim())) return false; // skip duplikat
+      existingNames.add(s.namaSekolah.toLowerCase().trim()); // cegah duplikat dalam file CSV itu sendiri
+      return true;
+    });
 
   try {
     // Kirim semua sekaligus dalam satu request batch
@@ -362,9 +369,10 @@ async function importCSV() {
     });
     const result = await res.json();
     const sukses = result.count || sekolahList.length;
+    const skipped = csvData.length - sekolahList.length;
     sekolahList.forEach((s, i) => allSekolah.push({ id: Date.now() + i, ...s }));
     renderSekolahTable(allSekolah);
-    showToast(`Import selesai: ${sukses} sekolah berhasil ditambahkan`, 'success');
+    showToast(`Import selesai: ${sukses} ditambahkan${skipped > 0 ? ', ' + skipped + ' duplikat dilewati' : ''}`, 'success');
   } catch (err) {
     console.error(err);
     showToast('Gagal import: ' + err.message, 'error');
@@ -396,6 +404,14 @@ document.getElementById('addSekolahForm')?.addEventListener('submit', async func
 
   if (!nama) {
     errEl.textContent = 'Nama sekolah wajib diisi';
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  // Cek duplikat
+  const duplikat = allSekolah.find(s => s.namaSekolah.toLowerCase().trim() === nama.toLowerCase().trim());
+  if (duplikat) {
+    errEl.textContent = `"${nama}" sudah ada di daftar sekolah`;
     errEl.classList.remove('hidden');
     return;
   }
@@ -450,6 +466,28 @@ async function deletePeserta(id) {
   try {
     await fetch(APPS_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'deletePeserta', id }) });
   } catch {}
+}
+
+async function hapusSemuaSekolah() {
+  if (!confirm(`Hapus SEMUA ${allSekolah.length} sekolah? Tindakan ini tidak dapat dibatalkan.`)) return;
+  document.getElementById('loadingOverlay').classList.remove('hidden');
+  try {
+    await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      redirect: 'follow',
+      body: JSON.stringify({ action: 'deleteAllSekolah' })
+    });
+    allSekolah = [];
+    renderSekolahTable([]);
+    showToast('Semua data sekolah berhasil dihapus', 'success');
+  } catch {
+    allSekolah = [];
+    renderSekolahTable([]);
+    showToast('Semua data sekolah dihapus (lokal)', 'info');
+  } finally {
+    document.getElementById('loadingOverlay').classList.add('hidden');
+  }
 }
 
 async function deleteSekolah(id) {

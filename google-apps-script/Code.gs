@@ -82,6 +82,7 @@ function doPost(e) {
     else if (action === 'addSekolah')       result = addSekolah(data);
     else if (action === 'addSekolahBatch')  result = addSekolahBatch(data);
     else if (action === 'deleteSekolah')    result = deleteSekolah(data);
+    else if (action === 'deleteAllSekolah') result = deleteAllSekolah();
     else if (action === 'deletePeserta')    result = deletePeserta(data);
     else result = { success: false, message: 'Action tidak dikenal: ' + action };
 
@@ -179,8 +180,19 @@ function addSekolahBatch(data) {
          .setFontWeight('bold').setBackground('#1e3a5f').setFontColor('white');
   }
 
+  // Ambil nama sekolah yang sudah ada untuk cek duplikat
+  const existingRows = sheet.getLastRow() > 1 ? sheet.getRange(2, 2, sheet.getLastRow() - 1, 1).getValues() : [];
+  const existingNames = new Set(existingRows.map(function(r) { return String(r[0]).toLowerCase().trim(); }));
+
   const tanggal = Utilities.formatDate(new Date(), 'Asia/Jakarta', 'yyyy-MM-dd HH:mm');
-  const rows = (data.data || []).map(function(s) {
+  const rows = (data.data || [])
+    .filter(function(s) {
+      const name = String(s.namaSekolah || '').toLowerCase().trim();
+      if (!name || existingNames.has(name)) return false;
+      existingNames.add(name);
+      return true;
+    })
+    .map(function(s) {
     return [
       Utilities.getUuid(), s.namaSekolah, s.npsn || '', s.alamat || '',
       s.kecamatan || '', s.kepsek || '', s.telp || '',
@@ -261,6 +273,19 @@ function deletePeserta(data) {
     }
   }
   return { success: false, message: 'Data tidak ditemukan' };
+}
+
+// =============================================
+// DELETE ALL SEKOLAH
+// =============================================
+function deleteAllSekolah() {
+  const ss = SpreadsheetApp.openById(getSpreadsheetId());
+  const sheet = ss.getSheetByName(SHEET_SEKOLAH);
+  if (!sheet) return { success: true };
+  // Hapus semua baris kecuali header
+  const lastRow = sheet.getLastRow();
+  if (lastRow > 1) sheet.deleteRows(2, lastRow - 1);
+  return { success: true };
 }
 
 // =============================================
