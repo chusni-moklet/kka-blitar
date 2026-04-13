@@ -6,6 +6,21 @@ const ADMIN_EMAIL = 'kka-blitar@gmail.com';
 const ADMIN_PASSWORD = 'chandra87';
 
 // =============================================
+// MOBILE SIDEBAR
+// =============================================
+function toggleSidebar() {
+  const sidebar = document.querySelector('aside.sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  sidebar.classList.toggle('open');
+  overlay.classList.toggle('show');
+}
+
+function closeSidebar() {
+  document.querySelector('aside.sidebar')?.classList.remove('open');
+  document.getElementById('sidebarOverlay')?.classList.remove('show');
+}
+
+// =============================================
 // AUTH
 // =============================================
 function doLogin() {
@@ -139,6 +154,7 @@ function showTab(tab) {
   });
   document.getElementById('pageTitle').textContent = titles[tab][0];
   document.getElementById('pageSubtitle').textContent = titles[tab][1];
+  closeSidebar(); // tutup sidebar di mobile
 }
 
 // =============================================
